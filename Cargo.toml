@@ -1,0 +1,17 @@
+[package]
+name = "icg"
+version = "0.1.0"
+authors = ["Nick Hamann <nick@wabbo.org>"]
+
+[dependencies]
+cgmath = "*"
+glium = "*"
+rand = "0.3"
+
+[[bin]]
+name = "glium_triangle"
+path = "src/main_glium.rs"
+
+[[bin]]
+name = "icg_sierpinski"
+path = "src/main_sierpinski.rs"
