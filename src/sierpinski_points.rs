@@ -7,7 +7,7 @@ extern crate glium;
 use cgmath::prelude::*;
 use cgmath::Vector2;
 
-const NUM_POINTS: u32 = 5000;
+const NUM_POINTS: u32 = 90000;
 
 fn generate_points(vertices: [Vector2<f32>; 3], initial: Vector2<f32>) -> Vec<Vector2<f32>> {
     // initialize points vector with arbitrary point inside the triangle
@@ -22,36 +22,7 @@ fn generate_points(vertices: [Vector2<f32>; 3], initial: Vector2<f32>) -> Vec<Ve
     points
 }
 
-fn main() {
-    use glium::{Surface, DisplayBuild};
-    let display = glium::glutin::WindowBuilder::new().build_glium().unwrap();
-    display.get_window().unwrap().set_title("sierpinski points");
-
-    #[derive(Copy, Clone)]
-    struct Vertex {
-        position: [f32; 2],
-    }
-
-    impl Vertex {
-        fn from_Vector2(x: Vector2<f32>) -> Vertex {
-            Vertex { position: cgmath::conv::array2(x) }
-        }
-    }
-
-    implement_vertex!(Vertex, position);
-
-    let vertices = [Vector2::new(-0.5f32, -0.5),
-                    Vector2::new(0.75f32, -0.25),
-                    Vector2::new(0.0f32, 0.5)];
-
-    let points = generate_points(vertices, Vector2::new(0.0f32, 0.25));
-
-    let conv_vertices: Vec<_> = points.into_iter()
-                                      .map(|v| Vertex::from_Vector2(v))
-                                      .collect();
-    let vertex_buffer = glium::VertexBuffer::new(&display, &conv_vertices).unwrap();
-    let indices = glium::index::NoIndices(glium::index::PrimitiveType::Points);
-
+fn generate_program<F>(display: &F) -> glium::Program where F: glium::backend::Facade {
     let vertex_shader_src = r#"
         #version 150
 
@@ -72,11 +43,45 @@ fn main() {
         }
     "#;
 
-    let program = glium::Program::from_source(&display,
-                                              vertex_shader_src,
-                                              fragment_shader_src,
-                                              None)
-                      .unwrap();
+    glium::Program::from_source(display,
+                                vertex_shader_src,
+                                fragment_shader_src,
+                                None)
+    .unwrap()
+}
+
+fn main() {
+    use glium::{Surface, DisplayBuild};
+    let display = glium::glutin::WindowBuilder::new().build_glium().unwrap();
+    display.get_window().unwrap().set_title("sierpinski points");
+
+    let vertices = [Vector2::new(-0.9f32, -0.7),
+                    Vector2::new(0.9f32, 0.0),
+                    Vector2::new(0.0f32, 0.75)];
+
+    let points = generate_points(vertices, Vector2::new(0.0f32, 0.25));
+
+    #[derive(Copy, Clone)]
+    struct Vertex {
+        position: [f32; 2],
+    }
+
+    impl Vertex {
+        fn from_Vector2(x: Vector2<f32>) -> Vertex {
+            Vertex { position: cgmath::conv::array2(x) }
+        }
+    }
+
+    implement_vertex!(Vertex, position);
+
+    // convert the array of `cgmath::Vector2`s to an array of `Vertex`s
+    let points_vertex: Vec<_> = points.into_iter()
+                                      .map(|v| Vertex::from_Vector2(v))
+                                      .collect();
+
+    let vertex_buffer = glium::VertexBuffer::new(&display, &points_vertex).unwrap();
+    let indices = glium::index::NoIndices(glium::index::PrimitiveType::Points);
+    let program = generate_program(&display);
 
     loop {
         let mut target = display.draw();
