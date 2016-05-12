@@ -5,21 +5,34 @@ extern crate glium;
 
 use cgmath::prelude::*;
 use cgmath::Vector2;
+use std::iter::Extend;
 
 const NUM_DIVISIONS: u8 = 5;
+const NUM_TRIANGLES: u32 = 243; // 3^5
+const NUM_POINTS: usize = (NUM_TRIANGLES as usize) * 3;
 
-fn generate_triangles(vertices: [Vector2<f32>; 3], depth: u8) -> Vec<Vector2<f32>> {
+fn generate_triangles(vertices: [Vector2<f32>; 3],
+                      triangle_points: &mut [Vector2<f32>],
+                      depth: u8) {
     if depth == 0 {
-        vec![vertices[0], vertices[1], vertices[2]]
+        for i in 0..3 {
+            triangle_points[i] = vertices[i];
+        }
     } else {
         let (a, b, c) = (vertices[0], vertices[1], vertices[2]);
         let mid_ab = (vertices[0] + vertices[1])/2.0;
         let mid_ac = (vertices[0] + vertices[2])/2.0;
         let mid_bc = (vertices[1] + vertices[2])/2.0;
-        let mut triangles = generate_triangles([a, mid_ab, mid_ac], depth-1);
-        triangles.extend(generate_triangles([mid_ab, b, mid_bc], depth-1));
-        triangles.extend(generate_triangles([mid_bc, mid_ac, c], depth-1));
-        triangles
+        let k = triangle_points.len() / 3;
+        generate_triangles([a, mid_ab, mid_ac],
+                           &mut triangle_points[..k],
+                           depth-1);
+        generate_triangles([mid_ab, b, mid_bc],
+                           &mut triangle_points[k..(2*k)],
+                           depth-1);
+        generate_triangles([mid_bc, mid_ac, c],
+                           &mut triangle_points[(2*k)..],
+                           depth-1);
     }
 
 }
@@ -61,7 +74,8 @@ fn main() {
                     Vector2::new(0.9f32, 0.0),
                     Vector2::new(0.0f32, 0.75)];
 
-    let points = generate_triangles(vertices, NUM_DIVISIONS);
+    let mut points = [Vector2::new(0.0f32, 0.); NUM_POINTS];
+    generate_triangles(vertices, &mut points[..], NUM_DIVISIONS);
 
     #[derive(Copy, Clone)]
     struct Vertex {
@@ -78,7 +92,7 @@ fn main() {
 
     // convert the array of `cgmath::Vector2`s to an array of `Vertex`s
     let points_vertex: Vec<_> = points.into_iter()
-                                      .map(|v| Vertex::from_Vector2(v))
+                                      .map(|&v| Vertex::from_Vector2(v))
                                       .collect();
 
     let vertex_buffer = glium::VertexBuffer::new(&display, &points_vertex).unwrap();
