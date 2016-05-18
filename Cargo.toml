@@ -19,3 +19,7 @@ path = "src/sierpinski_points.rs"
 [[bin]]
 name = "icg_sierpinski_triangles"
 path = "src/sierpinski_triangles.rs"
+
+[[bin]]
+name = "icg_sierpinski_3d_points"
+path = "src/sierpinski_3d_points.rs"
